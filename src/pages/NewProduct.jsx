@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import Button from "../components/ui/Button";
 import { uploadImage } from "../api/uploader";
-import { addNewProduct } from "../api/firebase";
+import { useQueryClient } from "@tanstack/react-query";
+import useProducts from "../hooks/useProducts";
 
 export default function NewProduct() {
   const [product, setProduct] = useState({});
   const [file, setFile] = useState();
   const [isUploading, setIsUploading] = useState(false);
   const [success, setSuccess] = useState();
+  const { addProduct } = useProducts();
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -17,17 +19,24 @@ export default function NewProduct() {
     }
     setProduct((product) => ({ ...product, [name]: value }));
   };
+  const queryClient = useQueryClient();
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsUploading(true);
     uploadImage(file)
       .then((url) => {
-        addNewProduct(product, url).then(() => {
-          setSuccess("성공적으로 제품이 추가되었습니다.");
-          setTimeout(() => {
-            setSuccess(null);
-          }, 4000);
-        });
+        addProduct.mutate(
+          { product, url },
+          {
+            onSuccess: () => {
+              setSuccess("성공적으로 제품이 추가되었습니다.");
+              setTimeout(() => {
+                setSuccess(null);
+              }, 4000);
+            },
+          }
+        );
       })
       .finally(() => setIsUploading(false));
   };
